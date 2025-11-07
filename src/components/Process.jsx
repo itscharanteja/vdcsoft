@@ -1,5 +1,4 @@
-// Removed stray opening markdown fence
-import React, { useRef, useState } from "react";
+import React, { forwardRef, useCallback, useLayoutEffect, useRef, useState } from "react";
 import { motion, useInView } from "framer-motion";
 
 const steps = [
@@ -20,6 +19,15 @@ const steps = [
 export default function Process() {
   const ref = useRef(null);
   const inView = useInView(ref, { once: true, margin: "-100px" });
+  const layoutRef = useRef(null);
+  const cardRefs = useRef([]);
+  const [lineData, setLineData] = useState({
+    width: 0,
+    height: 80,
+    d: "",
+    points: [],
+    length: 0,
+  });
 
   const stepVariants = {
     hidden: { opacity: 0, y: 10, scale: 0.98 },
@@ -40,23 +48,84 @@ export default function Process() {
     },
   };
 
-  const flowVariants = {
+  const lineVariants = {
     hidden: { pathLength: 0, opacity: 0 },
     visible: {
       pathLength: 1,
       opacity: 1,
-      transition: { duration: 1.5, ease: "easeInOut" },
+      transition: { duration: 1.2, ease: "easeInOut" },
     },
   };
 
-  const glowVariants = {
-    start: { opacity: 0, pathOffset: 0 },
-    end: {
-      opacity: [0, 1, 0],
-      pathOffset: 1,
-      transition: { duration: 2, repeat: Infinity, ease: "linear" },
-    },
+  const dotVariants = {
+    hidden: { scale: 0, opacity: 0 },
+    visible: (i) => ({
+      scale: 1,
+      opacity: 1,
+      transition: { duration: 0.4, delay: 0.3 + i * 0.1, ease: "easeOut" },
+    }),
   };
+
+  const recalcLine = useCallback(() => {
+    if (typeof window === "undefined") return;
+    if (!layoutRef.current) return;
+
+    const isDesktop = window.matchMedia("(min-width: 768px)").matches;
+    const containerRect = layoutRef.current.getBoundingClientRect();
+
+    if (!isDesktop) {
+      setLineData((prev) => ({
+        ...prev,
+        width: containerRect.width,
+        d: "",
+        points: [],
+        length: 0,
+      }));
+      return;
+    }
+
+    const usableRefs = cardRefs.current.filter((el) => el);
+    if (!usableRefs.length) {
+      setLineData((prev) => ({
+        ...prev,
+        width: containerRect.width,
+        d: "",
+        points: [],
+        length: 0,
+      }));
+      return;
+    }
+
+    const positions = usableRefs.map((el) => {
+      const rect = el.getBoundingClientRect();
+      return rect.left + rect.width / 2 - containerRect.left;
+    });
+
+    const totalLength = positions.reduce((sum, x, idx) => {
+      if (idx === 0) return sum;
+      return sum + Math.abs(x - positions[idx - 1]);
+    }, 0);
+
+    const height = 80;
+    const midY = height / 2;
+    const d = positions
+      .map((x, idx) => `${idx === 0 ? "M" : "L"} ${x} ${midY}`)
+      .join(" ");
+
+    setLineData({
+      width: containerRect.width,
+      height,
+      d,
+      points: positions,
+      length: totalLength,
+    });
+  }, []);
+
+  useLayoutEffect(() => {
+    recalcLine();
+    window.addEventListener("resize", recalcLine);
+    return () => window.removeEventListener("resize", recalcLine);
+  }, [recalcLine]);
 
   return (
     <section id="process" ref={ref} className="py-4">
@@ -66,35 +135,76 @@ export default function Process() {
         with every project.
       </p>
 
-      <div className="relative mt-12 md:h-[300px]">
-        <svg
-          className="absolute inset-0 hidden h-full w-full md:block"
-          viewBox="0 0 1000 300"
-          preserveAspectRatio="xMidYMid meet"
-        >
-          <motion.path
-            d="M200,150 C300,150 350,150 450,150 C550,150 600,150 700,150 C800,150 850,150 950,150"
-            fill="none"
-            stroke="#D4C4B7"
-            strokeWidth="4"
-            initial="hidden"
-            animate={inView ? "visible" : "hidden"}
-            variants={flowVariants}
-          />
-          <motion.path
-            d="M200,150 C300,150 350,150 450,150 C550,150 600,150 700,150 C800,150 850,150 950,150"
-            fill="none"
-            stroke="#8B7355"
-            strokeWidth="4"
-            strokeLinecap="round"
-            initial="start"
-            animate="end"
-            variants={glowVariants}
-            style={{ filter: "drop-shadow(0 0 8px #A67F5D)" }}
-          />
-        </svg>
+      <div className="relative mt-12" ref={layoutRef}>
+        {lineData.d && (
+          <svg
+            className="pointer-events-none absolute left-0 top-1/2 hidden -translate-y-1/2 md:block"
+            viewBox={`0 0 ${Math.max(lineData.width, 1)} ${lineData.height}`}
+            preserveAspectRatio="none"
+            style={{
+              width: lineData.width,
+              height: lineData.height,
+            }}
+          >
+            <motion.path
+              d={lineData.d}
+              fill="none"
+              stroke="#D4C4B7"
+              strokeWidth="4"
+              strokeLinecap="round"
+              pathLength="1"
+              initial="hidden"
+              animate={inView ? "visible" : "hidden"}
+              variants={lineVariants}
+            />
+            {lineData.length > 0 && (
+              <motion.path
+                key={`highlight-${lineData.d}`}
+                d={lineData.d}
+                fill="none"
+                stroke="#F7DFAE"
+                strokeWidth="6"
+                strokeLinecap="round"
+                strokeDasharray={`${Math.max(
+                  Math.min(lineData.length * 0.35, 220),
+                  100
+                )} ${Math.max(lineData.length, 1)}`}
+                strokeDashoffset={lineData.length}
+                initial={{ strokeDashoffset: lineData.length, opacity: 0 }}
+                animate={
+                  inView
+                    ? { strokeDashoffset: -lineData.length, opacity: 1 }
+                    : { strokeDashoffset: lineData.length, opacity: 0 }
+                }
+                transition={
+                  inView
+                    ? { duration: 3.2, ease: "linear", repeat: Infinity }
+                    : { duration: 0.3 }
+                }
+                style={{
+                  filter: "drop-shadow(0 0 12px rgba(247, 223, 174, 0.7))",
+                }}
+              />
+            )}
+            {lineData.points.map((x, idx) => (
+              <motion.circle
+                key={idx}
+                cx={x}
+                cy={lineData.height / 2}
+                r="9"
+                fill="#F3E9E1"
+                stroke="#D4C4B7"
+                strokeWidth="2"
+                initial="hidden"
+                animate={inView ? "visible" : "hidden"}
+                custom={idx}
+                variants={dotVariants}
+              />
+            ))}
+          </svg>
+        )}
 
-        <div className="relative z-10 grid gap-5 sm:grid-cols-2 md:grid-cols-4">
+        <div className="relative z-10 grid gap-5 sm:grid-cols-2 md:flex md:gap-6">
           {steps.map((s, i) => (
             <CardWithIcons
               key={s.title}
@@ -102,7 +212,10 @@ export default function Process() {
               index={i}
               inView={inView}
               stepVariants={stepVariants}
-              spreadVariants={spreadVariants}
+            spreadVariants={spreadVariants}
+              ref={(el) => {
+                cardRefs.current[i] = el;
+              }}
             />
           ))}
         </div>
@@ -111,17 +224,20 @@ export default function Process() {
   );
 }
 
-function CardWithIcons({ step, index, inView, stepVariants, spreadVariants }) {
+const CardWithIcons = forwardRef(function CardWithIcons(
+  { step, index, inView, stepVariants, spreadVariants },
+  ref
+) {
   const [hovered, setHovered] = useState(false);
-  const radius = 64;
 
   return (
     <motion.div
+      ref={ref}
       custom={index}
       variants={stepVariants}
       initial="hidden"
       animate={inView ? "visible" : "hidden"}
-      className="p-6 bg-white rounded-2xl shadow-md text-center relative overflow-hidden"
+      className="relative overflow-hidden rounded-2xl bg-white p-6 text-center shadow-md md:flex-1"
       onHoverStart={() => setHovered(true)}
       onHoverEnd={() => setHovered(false)}
       whileHover={{ scale: 1.03, y: -4 }}
@@ -151,4 +267,4 @@ function CardWithIcons({ step, index, inView, stepVariants, spreadVariants }) {
       </div>
     </motion.div>
   );
-}
+});

@@ -38,7 +38,7 @@ export default function Navbar() {
           <div className="flex items-center gap-3">
             <Link to="/" className="flex items-center gap-2">
               <img src={logo} alt="VDCSoft Logo" className="h-10 w-auto" />
-              <span className="text-xl font-bold text-accent">VDCsoft</span>
+              <span className="text-xl font-bold text-accent">VDCsoft.</span>
             </Link>
             <span className="hidden text-sm text-brandText/60 sm:inline">
               Based in Sweden · GDPR-ready
@@ -50,7 +50,9 @@ export default function Navbar() {
               type="button"
               className="flex h-11 w-11 items-center justify-center rounded-xl border border-secondary/40 text-brandText md:hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
               onClick={() => setIsMenuOpen((prev) => !prev)}
-              aria-label={isMenuOpen ? "Close navigation menu" : "Open navigation menu"}
+              aria-label={
+                isMenuOpen ? "Close navigation menu" : "Open navigation menu"
+              }
               aria-expanded={isMenuOpen}
             >
               {isMenuOpen ? (
@@ -91,11 +93,16 @@ export default function Navbar() {
 
         <div
           className={`md:hidden ${
-            isMenuOpen ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"
+            isMenuOpen
+              ? "grid-rows-[1fr] opacity-100"
+              : "grid-rows-[0fr] opacity-0"
           } grid transition-all duration-300`}
         >
           <div className="overflow-hidden">
-            <nav aria-label="Mobile navigation" className="mt-4 space-y-3 rounded-2xl border border-secondary/30 bg-white p-4 shadow-md">
+            <nav
+              aria-label="Mobile navigation"
+              className="mt-4 space-y-3 rounded-2xl border border-secondary/30 bg-white p-4 shadow-md"
+            >
               <div className="text-sm text-brandText/60 sm:hidden">
                 Based in Sweden · GDPR-ready
               </div>
