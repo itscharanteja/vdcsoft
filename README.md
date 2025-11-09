@@ -56,6 +56,7 @@ cp .env.example .env
 Deployment
 
 - The project is ready to deploy to Vercel, Netlify or similar. Point the build command to `npm run build` and the publish directory to `dist`.
+- For GitHub Pages (client-side routing), run `npm run deploy`. The script copies `dist/index.html` to `dist/404.html` so deep links resolve correctly (GitHub Pages serves `404.html` for unknown routes).
 
 SEO & accessibility notes
 
