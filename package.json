@@ -2,10 +2,12 @@
   "name": "vdcsoft",
   "version": "0.1.0",
   "private": true,
+  "homepage": "https://github.com/itscharanteja/vdcsoft",
   "scripts": {
+    "predeploy": "npm run build",
+    "deploy": "gh-pages -d dist",
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview",
     "lint": "echo \"No linter configured\""
   },
   "dependencies": {
@@ -19,6 +21,7 @@
   "devDependencies": {
     "@vitejs/plugin-react": "^4.0.0",
     "autoprefixer": "^10.4.14",
+    "gh-pages": "^6.3.0",
     "postcss": "^8.4.27",
     "tailwindcss": "^3.4.8",
     "vite": "^5.1.3"
