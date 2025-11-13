@@ -1,0 +1,10 @@
+Options -MultiViews
+RewriteEngine On
+
+# Let Apache serve existing files (assets, sitemap, etc.) directly
+RewriteCond %{REQUEST_FILENAME} -f [OR]
+RewriteCond %{REQUEST_FILENAME} -d
+RewriteRule ^ - [L]
+
+# Everything else should fall back to the SPA entry point
+RewriteRule ^ index.html [L]
